@@ -19,8 +19,8 @@ Table of Contents:
 - MATLAB code
   - [read_dataset.m](src_matlab/read_dataset.m) - For reading a dataset file and making sense of it
 - Generated datasets
+  - [prototype-set-1](dist/prototype-set-1) - (Prototyped) Propellor fault data is logged for 2 different use-cases (hover and go in a straight line) with multiple props (5mm, 10mm, 20mm, 25mm, 40mm). This dataset also contains the compressed flight testing videos of each scenario.
   - [simulation-set-1](dist/simulation-set-1) - (Simulated) Motor fault data is logged for 4 different drone frames (Quad+, QuadX, Hexa+, HexaX)
-  - [prototype-set-1](dist/prototype-set-1) - (Prototyped) Motor fault data is logged for 4 different drone frames (Quad+, QuadX, Hexa+, HexaX)
 
 ## Getting started with code
 
