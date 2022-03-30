@@ -1,5 +1,6 @@
 % Choose which log file to read
-filename = 'dist/set-1/quad-x/m1.mat';
+% filename = 'dist/simulation-set-1/quad-x/m1.mat';
+filename = 'dist/prototype-set-1/hover/5mm-cut-hover/5mm_cut_hover_1.mat';
 
 % Choose variables to read - you can open the .mat file and read the (upto
 % 4 digit) var names. You can add the desired var names here.
@@ -41,7 +42,7 @@ timestampInSeconds = RATELastTimestamp*10^-6;
 
 % Create plots
 x = (selectedArray.TimeUS);
-
+f= figure;
 rateP = selectedArray.P;
 ratePDes = selectedArray.PDes;
 t1 = nexttile;
@@ -49,10 +50,9 @@ plot(x*10^-6, rateP, 'LineWidth', 2);
 hold on;
 plot(x*10^-6, ratePDes, 'Color',[1,0.7,0], 'LineStyle', '--', 'LineWidth', 2);
 line([timestampInSeconds timestampInSeconds], ylim, 'Color',[1,0,0], 'LineWidth', 1);
-xlim([54 73]);
 xlabel(t1,'Time in seconds');
-ylabel(t1,'P and P Desired');
-legend('P','PDes','ERR','Location','southwest');
+ylabel(t1,'Pitch and Pitch Desired');
+legend('Pitch','PitchDes','ERR','Location','southwest');
 set(gca,'FontSize', 14);
 
 rateY = selectedArray.Y;
@@ -62,10 +62,9 @@ plot(x*10^-6, rateY, 'LineWidth', 2);
 hold on;
 plot(x*10^-6, rateYDes, 'Color',[1,0.7,0], 'LineStyle', '--', 'LineWidth', 2);
 line([timestampInSeconds timestampInSeconds], ylim, 'Color',[1,0,0], 'LineWidth', 1);
-xlim([54 73]);
 xlabel(t2,'Time in seconds');
-ylabel(t2,'Q and Q Desired');
-legend('Q','QDes','ERR','Location','southwest');
+ylabel(t2,'Yaw and Yaw Desired');
+legend('Yaw','YawDes','ERR','Location','southwest');
 set(gca,'FontSize', 14);
 
 rateR = selectedArray.R;
@@ -75,10 +74,9 @@ plot(x*10^-6, rateR, 'LineWidth', 2);
 hold on;
 plot(x*10^-6, rateRDes, 'Color',[1,0.7,0], 'LineStyle', '--', 'LineWidth', 2);
 line([timestampInSeconds timestampInSeconds], ylim, 'Color',[1,0,0], 'LineWidth', 1);
-xlim([54 73]);
 xlabel(t3,'Time in seconds');
-ylabel(t3,'R and R Desired');
-legend('R','RDes','ERR','Location','southwest');
+ylabel(t3,'Roll and Roll Desired');
+legend('Roll','RollDes','ERR','Location','southwest');
 set(gca,'FontSize', 14);
 
 % Select the dataset array you wish to work on (Baro, Gyro, EKF, ...)
@@ -105,7 +103,6 @@ t4 = nexttile;
 plot(x*10^-6, baroAlt, 'LineWidth', 2);
 hold on;
 line([timestampInSeconds timestampInSeconds], ylim, 'Color',[1,0,0], 'LineWidth', 1);
-xlim([54 73]);
 xlabel(t4,'Time in seconds');
 ylabel(t4,'Altitude');
 legend('Alt','ERR','Location','southwest');
