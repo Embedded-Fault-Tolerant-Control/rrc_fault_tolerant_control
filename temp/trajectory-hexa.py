@@ -10,6 +10,7 @@ sys.path.insert(0, cur_path+"/..")
 from src.utility.logger import *
 
 from dronekit import connect, mavutil, VehicleMode, LocationGlobalRelative
+
 import time
 
 import numpy as np
@@ -24,7 +25,12 @@ class Autopilot:
     """ A Dronekit autopilot connection manager. """
     def __init__(self, connection_string, *args, **kwargs):
         logging.debug('connecting to Drone (or SITL/HITL) on: %s', connection_string)
+        logging.debug('first connection starting')
         self.master = connect(connection_string, wait_ready=True)
+        logging.debug('first connection made')
+        logging.debug('second connection starting')
+        self.mavutil = mavutil.mavlink_connection('127.0.0.1:14550')
+        logging.debug('second connection made')
 
         # Add a heartbeat listener
         def heartbeat_listener(_self, name, msg):
@@ -236,9 +242,11 @@ if __name__ == '__main__':
         logging.debug("Changing YAW")
 
         # rotate clockwise
-        change_yaw(-1)
+        # change_yaw(-1)
 
-        logging.debug("Goto Again")
+        # logging.debug("Goto Again")
         # drone.master.simple_goto(point1)
         # time.sleep(10)
 
+        msg = drone.mavutil.recv_match(type='NAV_CONTROLLER_OUTPUT', blocking=True)
+        print("MSG: ", msg)
