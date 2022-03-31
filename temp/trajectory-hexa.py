@@ -16,6 +16,7 @@ import time
 import numpy as np
 import numpy.matlib
 import scipy.io
+import json
 
 from mixerlib import *
 
@@ -31,17 +32,17 @@ class Autopilot:
 
         self.pitch_array = []
         self.roll_array = []
-        self.yaw_array = []
 
         # Add a heartbeat listener
         def heartbeat_listener(_self, name, msg):
             self.last_heartbeat = msg
 
             # Procedure to track and store pitch-roll-yaw values
-            nav_controller = self.mavutil.recv_match(type='NAV_CONTROLLER_OUTPUT', blocking=False)
-            self.pitch_array.append(nav_controller.nav_pitch)
-            self.roll_array.append(nav_controller.nav_roll)
-            self.yaw_array.append(nav_controller.nav_yaw)
+            nav_msg = self.mavutil.recv_match(type='NAV_CONTROLLER_OUTPUT', blocking=False)
+            # 'nav_roll', 'nav_pitch', 'alt_error', 'aspd_error', 'xtrack_error', 'nav_bearing', 'target_bearing', 'wp_dist'
+            nav_data = (nav_msg.nav_roll, nav_msg.nav_pitch, nav_msg.alt_error, nav_msg.aspd_error, nav_msg.xtrack_error, nav_msg.nav_bearing, nav_msg.target_bearing, nav_msg.wp_dist) 
+            self.pitch_array.append(nav_data[1])
+            self.roll_array.append(nav_data[0])
 
         self.heart = heartbeat_listener
 
@@ -255,4 +256,4 @@ if __name__ == '__main__':
         # drone.master.simple_goto(point1)
         # time.sleep(10)
         
-        scipy.io.savemat('c:/arrdata.mat', mdict={'Pitch': drone.pitch_array,'Roll': drone.roll_array,'Yaw': drone.yaw_array})
+        scipy.io.savemat('~Documents\\motor_fault_sim_dataset\\arrdata.mat', mdict={'Pitch': drone.pitch_array,'Roll': drone.roll_array})
