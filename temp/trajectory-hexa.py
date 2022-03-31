@@ -15,6 +15,7 @@ import time
 
 import numpy as np
 import numpy.matlib
+import scipy.io
 
 from mixerlib import *
 
@@ -25,16 +26,22 @@ class Autopilot:
     """ A Dronekit autopilot connection manager. """
     def __init__(self, connection_string, *args, **kwargs):
         logging.debug('connecting to Drone (or SITL/HITL) on: %s', connection_string)
-        logging.debug('first connection starting')
         self.master = connect(connection_string, wait_ready=True)
-        logging.debug('first connection made')
-        logging.debug('second connection starting')
         self.mavutil = mavutil.mavlink_connection('127.0.0.1:14550')
-        logging.debug('second connection made')
+
+        self.pitch_array = []
+        self.roll_array = []
+        self.yaw_array = []
 
         # Add a heartbeat listener
         def heartbeat_listener(_self, name, msg):
             self.last_heartbeat = msg
+
+            # Procedure to track and store pitch-roll-yaw values
+            nav_controller = self.mavutil.recv_match(type='NAV_CONTROLLER_OUTPUT', blocking=False)
+            self.pitch_array.append(nav_controller.nav_pitch)
+            self.roll_array.append(nav_controller.nav_roll)
+            self.yaw_array.append(nav_controller.nav_yaw)
 
         self.heart = heartbeat_listener
 
@@ -239,7 +246,7 @@ if __name__ == '__main__':
         set_servo(1, 1000)
         set_servo(2, 1000)
 
-        logging.debug("Changing YAW")
+        # logging.debug("Changing YAW")
 
         # rotate clockwise
         # change_yaw(-1)
@@ -247,6 +254,5 @@ if __name__ == '__main__':
         # logging.debug("Goto Again")
         # drone.master.simple_goto(point1)
         # time.sleep(10)
-
-        msg = drone.mavutil.recv_match(type='NAV_CONTROLLER_OUTPUT', blocking=True)
-        print("MSG: ", msg)
+        
+        scipy.io.savemat('c:/arrdata.mat', mdict={'Pitch': drone.pitch_array,'Roll': drone.roll_array,'Yaw': drone.yaw_array})
