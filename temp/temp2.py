@@ -89,28 +89,20 @@ if __name__ == '__main__':
 
         def set_motor_mode(motor_num, set_reset):
             # get servo function - what this motor does
-            logging.debug("PRE SET PARAM %s: %s", f'SERVO{motor_num}_FUNCTION' ,drone.master.parameters[f'SERVO{motor_num}_FUNCTION'])
+            logging.debug("GOT PARAM: %s", drone.master.parameters[f'SERVO{motor_num}_FUNCTION'])
             time.sleep(0.1)
 
             # set servo function - change to 1 for RCPassThru
             drone.master.parameters[f'SERVO{motor_num}_FUNCTION'] = set_reset
             time.sleep(0.1)
 
-            # get servo function - what this motor does
-            logging.debug("POST SET PARAM %s: %s", f'SERVO{motor_num}_FUNCTION' ,drone.master.parameters[f'SERVO{motor_num}_FUNCTION'])
-            time.sleep(0.1)
-
         def set_motor_dir(motor_num, set_reset):
             # get servo function - what this motor does
-            logging.debug("PRE SET PARAM %s: %s", f'SERVO{motor_num}_REVERSED' ,drone.master.parameters[f'SERVO{motor_num}_REVERSED'])
+            logging.debug("GOT PARAM: %s", drone.master.parameters[f'SERVO{motor_num}_REVERSED'])
             time.sleep(0.1)
 
             # set servo function - change to 1 for Reverse direction
             drone.master.parameters[f'SERVO{motor_num}_REVERSED'] = set_reset
-            time.sleep(0.1)
-
-            # get servo function - what this motor does
-            logging.debug("POST SET PARAM %s: %s", f'SERVO{motor_num}_REVERSED' ,drone.master.parameters[f'SERVO{motor_num}_REVERSED'])
             time.sleep(0.1)
 
         def send_ned_velocity(velocity_x, velocity_y, velocity_z, duration):
@@ -139,28 +131,57 @@ if __name__ == '__main__':
 
         def change_yaw(yaw_value):
             yaw_pwm = np.abs(np.interp(yaw_value, (-1, 1), (-1800, 1800)))
-            set_motor_mode(3, 1)
-            set_motor_mode(4, 1)
-            set_motor_mode(5, 1)
-            set_motor_mode(6, 1)
-            
-            set_servo(3, 1800)
-            set_servo(4, 1800)
-            # reverse other two
-            # set_motor_dir(5, 1)
-            # set_motor_dir(6, 1)
-            set_servo(5, 1800)
-            set_servo(6, 1800)
-            
+            if(yaw_value<0):
+                # -ve, rotate counter clockwise
+                set_servo(3, yaw_pwm)
+                set_servo(4, yaw_pwm)
+                # reverse other two
+                set_motor_dir(5, 1)
+                set_motor_dir(6, 1)
+                set_servo(5, 1200)
+                set_servo(6, 1200)
+            else:
+                # +ve, rotate clockwise
+                # reverse first two
+                set_motor_dir(3, 1)
+                set_motor_dir(4, 1)
+                set_servo(3, 1200)
+                set_servo(4, 1200)
+                # set other two
+                set_servo(5, yaw_pwm)
+                set_servo(6, yaw_pwm)
             time.sleep(10)
-            set_motor_mode(3, 35)
-            set_motor_mode(4, 36)
-            set_motor_mode(5, 37)
-            set_motor_mode(6, 38)
-            # set_motor_dir(3, 0)
-            # set_motor_dir(4, 0)
-            # set_motor_dir(5, 0)
-            # set_motor_dir(6, 0)
+            set_motor_dir(3, 0)
+            set_motor_dir(4, 0)
+            set_motor_dir(5, 0)
+            set_motor_dir(6, 0)
+
+        def change_roll(roll_value):
+            roll_pwm = np.abs(np.interp(roll_value, (-1, 1), (-1800, 1800)))
+            if(roll_value<0):
+                # -ve, rotate counter clockwise
+                set_servo(3, roll_value)
+                set_servo(4, roll_value)
+                # reverse other two
+                set_motor_dir(5, 1)
+                set_motor_dir(6, 1)
+                set_servo(5, roll_value)
+                set_servo(6, roll_value)
+            else:
+                # +ve, rotate clockwise
+                # reverse first two
+                set_motor_dir(3, 1)
+                set_motor_dir(4, 1)
+                set_servo(3, roll_value)
+                set_servo(4, roll_value)
+                # set other two
+                set_servo(5, roll_value)
+                set_servo(6, roll_value)
+            time.sleep(1)
+            set_motor_dir(3, 0)
+            set_motor_dir(4, 0)
+            set_motor_dir(5, 0)
+            set_motor_dir(6, 0)
 
         # Reset all motor configs
         set_motor_mode(1, 33)
@@ -228,17 +249,9 @@ if __name__ == '__main__':
         # TODO: Set motor modes to 1, for the motors you need to introduce fault into
         set_motor_mode(1, 1)
         set_motor_mode(2, 1)
-
+        
         # TODO: Manually pass a PWM value to the selected motor. For simulating a fault, we pass 1000, which means the motor does not run at all.
         set_servo(1, 1000)
         set_servo(2, 1000)
-
-        logging.debug("Changing YAW")
-
-        # rotate clockwise
-        change_yaw(-1)
-
-        logging.debug("Goto Again")
-        # drone.master.simple_goto(point1)
-        # time.sleep(10)
-
+       
+        time.sleep(10)
