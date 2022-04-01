@@ -257,3 +257,10 @@ if __name__ == '__main__':
         # time.sleep(10)
         
         scipy.io.savemat('~Documents\\motor_fault_sim_dataset\\arrdata.mat', mdict={'Pitch': drone.pitch_array,'Roll': drone.roll_array})
+
+
+        # TODO: Avijit recommended config for HexaCopter
+        #    C
+        # W     C
+        # C     w
+        #    W
