@@ -1,7 +1,15 @@
 """
-Description of what this file does.
+TODO: Description of what this file does.
+
+How to run:
+1. Have 2 terminals open
+    a. ~/ardupilot_ws/src/ardupilot# ./Tools/autotest/sim_vehicle.py -v ArduCopter --vehicle=ArduCopter --frame=hexa
+    b. mavproxy.py --master 127.0.0.1:14551 --out=udp:127.0.0.1:14552 --out=udp:127.0.0.1:14553
+2. Open QGC/Ground control - it will auto connect to 127.0.0.1:14550 or 127.0.0.1:14551
+3. Run this file
 """
 
+import imp
 import os
 import sys
 cur_path=os.path.abspath(os.path.dirname(__file__))
@@ -22,27 +30,26 @@ from mixerlib import *
 
 logging.debug('Beginning of code...')
 
+import threading
 
 class Autopilot:
     """ A Dronekit autopilot connection manager. """
     def __init__(self, connection_string, *args, **kwargs):
         logging.debug('connecting to Drone (or SITL/HITL) on: %s', connection_string)
+        self.alive = True
         self.master = connect(connection_string, wait_ready=True)
-        self.mavutil = mavutil.mavlink_connection('127.0.0.1:14550')
+        self.mavutil = mavutil.mavlink_connection('127.0.0.1:14552')
+
+        self.schedules = []
+        self.threads = []
 
         self.pitch_array = []
         self.roll_array = []
 
         # Add a heartbeat listener
+        # Func for heartbeat
         def heartbeat_listener(_self, name, msg):
             self.last_heartbeat = msg
-
-            # Procedure to track and store pitch-roll-yaw values
-            nav_msg = self.mavutil.recv_match(type='NAV_CONTROLLER_OUTPUT', blocking=False)
-            # 'nav_roll', 'nav_pitch', 'alt_error', 'aspd_error', 'xtrack_error', 'nav_bearing', 'target_bearing', 'wp_dist'
-            nav_data = (nav_msg.nav_roll, nav_msg.nav_pitch, nav_msg.alt_error, nav_msg.aspd_error, nav_msg.xtrack_error, nav_msg.nav_bearing, nav_msg.target_bearing, nav_msg.wp_dist) 
-            self.pitch_array.append(nav_data[1])
-            self.roll_array.append(nav_data[0])
 
         self.heart = heartbeat_listener
 
@@ -50,13 +57,16 @@ class Autopilot:
 
     def __enter__(self):
         ''' Send regular heartbeats while using in a context manager. '''
+        self.alive = True
         logging.info('__enter__ -> reviving heart (if required)')
         # Listen to the heartbeat
         self.master.add_message_listener('HEARTBEAT', self.heart)
+       
         return self
 
     def __exit__(self, *args):
         ''' Automatically disarm and stop heartbeats on error/context-close. '''
+        self.alive = False
         logging.info('__exit__ -> disarming, stopping heart and closing connection')
         # TODO: add reset parameters procedure. Can be based on flag?
         # Disarm if not disarmed
@@ -64,6 +74,10 @@ class Autopilot:
             self.master.armed = False
         # Kill heartbeat
         self.master.remove_message_listener('HEARTBEAT', self.heart)
+        # Kill scheduler
+        for i in range(0, len(self.schedules)-1):
+            t = self.threads[i]
+            t.stop()
         # Close Drone connection
         logging.info('disconnect -> closing Drone connection') 
         self.master.close()
@@ -79,7 +93,7 @@ if __name__ == '__main__':
     connection_string = args.connect
 
     if not connection_string:
-        connection_string = '127.0.0.1:14551'
+        connection_string = '127.0.0.1:14553'
 
     if not connection_string:
         logging.critical("No connection string specified, exiting code.")
@@ -176,6 +190,31 @@ if __name__ == '__main__':
             # set_motor_dir(5, 0)
             # set_motor_dir(6, 0)
 
+        # RPY Thread
+        def rpy_thread():
+            if(drone.alive)==False:
+                pass
+            while drone.alive:
+                rpy_logger()
+                # TODO: Mayank - test this delay on Pi
+                time.sleep(0.1)
+
+        # Schedule pings for rpy# Func for rpy logging
+        def rpy_logger():
+            # Procedure to track and store pitch-roll-yaw values
+            nav_msg = drone.mavutil.recv_match(type='NAV_CONTROLLER_OUTPUT', blocking=False)
+            # TODO: Mayank - test this delay on Pi
+            time.sleep(0.1)
+            if(nav_msg) is None:
+                pass
+            elif nav_msg.get_type()!='BAD_DATA':
+                # 'nav_roll', 'nav_pitch', 'alt_error', 'aspd_error', 'xtrack_error', 'nav_bearing', 'target_bearing', 'wp_dist'
+                nav_data = (nav_msg.nav_roll, nav_msg.nav_pitch, nav_msg.alt_error, nav_msg.aspd_error, nav_msg.xtrack_error, nav_msg.nav_bearing, nav_msg.target_bearing, nav_msg.wp_dist) 
+                drone.pitch_array.append(nav_data[1])
+                drone.roll_array.append(nav_data[0])
+                # TODO: Uncomment later on, or add exception to logger.py
+                logging.debug("RPY Logged")
+
         # Reset all motor configs
         set_motor_mode(1, 33)
         set_motor_mode(2, 34)
@@ -206,6 +245,9 @@ if __name__ == '__main__':
         # Copter should arm in GUIDED mode
         drone.master.mode = VehicleMode("GUIDED")
         drone.master.armed = True
+        
+        # Start RPY Logger
+        threading.Thread(target= rpy_thread).start()
 
         # Confirm vehicle armed before attempting to take off
         while not drone.master.armed:
@@ -252,12 +294,13 @@ if __name__ == '__main__':
         # rotate clockwise
         # change_yaw(-1)
 
-        # logging.debug("Goto Again")
-        # drone.master.simple_goto(point1)
-        # time.sleep(10)
+        logging.debug("Goto Again")
+        drone.master.simple_goto(point1)
+        time.sleep(10)
         
-        scipy.io.savemat('~Documents\\motor_fault_sim_dataset\\arrdata.mat', mdict={'Pitch': drone.pitch_array,'Roll': drone.roll_array})
+        scipy.io.savemat('\\temp\\arrdata-new.mat', mdict={'Pitch': drone.pitch_array,'Roll': drone.roll_array})
 
+        logging.debug("Size: %s", str(len(drone.pitch_array)))
 
         # TODO: Avijit recommended config for HexaCopter
         #    C
