@@ -45,6 +45,7 @@ class Autopilot:
 
         self.pitch_array = []
         self.roll_array = []
+        self.timestamp_array = []
 
         # Add a heartbeat listener
         # Func for heartbeat
@@ -197,22 +198,25 @@ if __name__ == '__main__':
             while drone.alive:
                 rpy_logger()
                 # TODO: Mayank - test this delay on Pi
-                time.sleep(0.1)
+                time.sleep(0.01)
 
-        # Schedule pings for rpy# Func for rpy logging
+        # Func for rpy logging
         def rpy_logger():
             # Procedure to track and store pitch-roll-yaw values
             nav_msg = drone.mavutil.recv_match(type='NAV_CONTROLLER_OUTPUT', blocking=False)
             # TODO: Mayank - test this delay on Pi
-            time.sleep(0.1)
+            time.sleep(0.01)
             if(nav_msg) is None:
                 pass
             elif nav_msg.get_type()!='BAD_DATA':
                 # 'nav_roll', 'nav_pitch', 'alt_error', 'aspd_error', 'xtrack_error', 'nav_bearing', 'target_bearing', 'wp_dist'
                 nav_data = (nav_msg.nav_roll, nav_msg.nav_pitch, nav_msg.alt_error, nav_msg.aspd_error, nav_msg.xtrack_error, nav_msg.nav_bearing, nav_msg.target_bearing, nav_msg.wp_dist) 
+                timestamp = getattr(nav_msg, '_timestamp', None)
+                timestamp = int(timestamp*1.0e6)
                 drone.pitch_array.append(nav_data[1])
                 drone.roll_array.append(nav_data[0])
-                # TODO: Uncomment later on, or add exception to logger.py
+                drone.timestamp_array.append(timestamp)
+                # TODO: Comment later on, or add exception to logger.py
                 logging.debug("RPY Logged")
 
         # Reset all motor configs
@@ -298,7 +302,7 @@ if __name__ == '__main__':
         drone.master.simple_goto(point1)
         time.sleep(10)
         
-        scipy.io.savemat('\\temp\\arrdata-new.mat', mdict={'Pitch': drone.pitch_array,'Roll': drone.roll_array})
+        scipy.io.savemat('\\temp\\arrdata-new.mat', mdict={'Pitch': drone.pitch_array,'Roll': drone.roll_array, 'Time': drone.timestamp_array})
 
         logging.debug("Size: %s", str(len(drone.pitch_array)))
 
