@@ -259,7 +259,7 @@ if __name__ == '__main__':
             time.sleep(1)
 
         print("Taking off!")
-        drone.master.simple_takeoff(10)  # Take off to target altitude
+        drone.master.simple_takeoff(20)  # Take off to target altitude
 
         # Wait until the vehicle reaches a safe height before processing the goto
         #  (otherwise the command after Vehicle.simple_takeoff will execute
@@ -267,7 +267,7 @@ if __name__ == '__main__':
         while True:
             print(" Altitude: ", drone.master.location.global_relative_frame.alt)
             # Break and return from function just below target altitude.
-            if drone.master.location.global_relative_frame.alt >= 10 * 0.95:
+            if drone.master.location.global_relative_frame.alt >= 20 * 0.95:
                 print("Reached target altitude")
                 break
             time.sleep(1)
@@ -285,13 +285,20 @@ if __name__ == '__main__':
 
         logging.debug("Last Heartbeat: %s", drone.last_heartbeat)
 
+
         # TODO: Set motor modes to 1, for the motors you need to introduce fault into
-        set_motor_mode(1, 1)
-        set_motor_mode(2, 1)
+        # set_motor_mode(1, 1)
+        set_motor_mode(3, 1)
+        set_motor_mode(4, 1)
 
         # TODO: Manually pass a PWM value to the selected motor. For simulating a fault, we pass 1000, which means the motor does not run at all.
-        set_servo(1, 1000)
-        set_servo(2, 1000)
+        # set_servo(1, 1000)
+        set_servo(3, 1000)
+        set_servo(4, 1000)
+        # time.sleep(0.5)
+
+        # set_motor_mode(5, 1)
+        # set_servo(5, 1000)
 
         # logging.debug("Changing YAW")
 
@@ -307,7 +314,10 @@ if __name__ == '__main__':
         logging.debug("Size: %s", str(len(drone.pitch_array)))
 
         # TODO: Avijit recommended config for HexaCopter
-        #    C
-        # W     C
-        # C     w
-        #    W
+        #    C2
+        # W3     C1
+        # C4     w6
+        #    W5
+
+        # Running Avijiths config:
+        # /Tools/autotest/sim_vehicle.py -v ArduCopter --vehicle=ArduCopter --frame=hexa-ftc --add-param-file=./Tools/autotest/default_params/copter.parm
