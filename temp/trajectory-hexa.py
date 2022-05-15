@@ -45,7 +45,8 @@ class Autopilot:
 
         self.pitch_array = []
         self.roll_array = []
-        self.timestamp_array = []
+        self.rpy_timestamps = []
+        self.w_timestamps = []
 
         # Add a heartbeat listener
         # Func for heartbeat
@@ -215,7 +216,26 @@ if __name__ == '__main__':
                 timestamp = int(timestamp*1.0e6)
                 drone.pitch_array.append(nav_data[1])
                 drone.roll_array.append(nav_data[0])
-                drone.timestamp_array.append(timestamp)
+                drone.rpy_timestamps.append(timestamp)
+                # TODO: Comment later on, or add exception to logger.py
+                logging.debug("RPY Logged")
+
+        # Func for rpy logging
+        def w_logger():
+            # Procedure to track and store pitch-roll-yaw values
+            nav_msg = drone.mavutil.recv_match(type='ATTITUDE_QUATERNION_COV', blocking=False)
+            # TODO: Mayank - test this delay on Pi
+            time.sleep(0.01)
+            if(nav_msg) is None:
+                pass
+            elif nav_msg.get_type()!='BAD_DATA':
+                # 'nav_roll', 'nav_pitch', 'alt_error', 'aspd_error', 'xtrack_error', 'nav_bearing', 'target_bearing', 'wp_dist'
+                nav_data = (nav_msg.nav_roll, nav_msg.nav_pitch, nav_msg.alt_error, nav_msg.aspd_error, nav_msg.xtrack_error, nav_msg.nav_bearing, nav_msg.target_bearing, nav_msg.wp_dist) 
+                timestamp = getattr(nav_msg, '_timestamp', None)
+                timestamp = int(timestamp*1.0e6)
+                drone.pitch_array.append(nav_data[1])
+                drone.roll_array.append(nav_data[0])
+                drone.rpy_timestamps.append(timestamp)
                 # TODO: Comment later on, or add exception to logger.py
                 logging.debug("RPY Logged")
 
