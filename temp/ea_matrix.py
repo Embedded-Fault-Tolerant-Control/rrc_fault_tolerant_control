@@ -319,13 +319,23 @@ if __name__ == '__main__':
         # Avijith recommended config for HexaCopter
         #    C2
         # W3     C1
-        # C4     w6
+        # C4     w1
         #    W5
-        
+        # Pairs 1-3, 2-5, 4-6
+        #
+        # NEW:
+        #    C3
+        # W4     C2
+        # C5     w1
+        #    W6
+
         # TODO: 
         # 1. Find relatives/ store pair of motors
         # 2. Fail 1 motor
         # 3. Fail paired 2nd motor
         # 4. Write EA Matrix when motors 1 & 2 are OFF
 
-        # Pairs 1-3, 2-5, 4-6
+        # New pairs need translation from testing order to motor index order, refer:
+        # https://github.com/AdityaMulgundkar/ardupilot-ftc/blob/master/libraries/AP_Motors/AP_MotorsMatrix.cpp
+        # New pairs: 1-5, 3-6, 2-4;
+        # Translated to: 5-2, 4-3, 1-6;
