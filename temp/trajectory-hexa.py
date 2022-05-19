@@ -46,6 +46,10 @@ class Autopilot:
         self.pitch_array = []
         self.roll_array = []
         self.rpy_timestamps = []
+
+        self.pitchspeed_array = []
+        self.rollspeed_array = []
+        self.yawspeed_array = []
         self.w_timestamps = []
 
         # Add a heartbeat listener
@@ -201,6 +205,15 @@ if __name__ == '__main__':
                 # TODO: Mayank - test this delay on Pi
                 time.sleep(0.01)
 
+        # W Thread
+        def w_thread():
+            if(drone.alive)==False:
+                pass
+            while drone.alive:
+                w_logger()
+                # TODO: Mayank - test this delay on Pi
+                time.sleep(0.01)
+
         # Func for rpy logging
         def rpy_logger():
             # Procedure to track and store pitch-roll-yaw values
@@ -229,15 +242,17 @@ if __name__ == '__main__':
             if(nav_msg) is None:
                 pass
             elif nav_msg.get_type()!='BAD_DATA':
-                # 'nav_roll', 'nav_pitch', 'alt_error', 'aspd_error', 'xtrack_error', 'nav_bearing', 'target_bearing', 'wp_dist'
-                nav_data = (nav_msg.nav_roll, nav_msg.nav_pitch, nav_msg.alt_error, nav_msg.aspd_error, nav_msg.xtrack_error, nav_msg.nav_bearing, nav_msg.target_bearing, nav_msg.wp_dist) 
+                # TODO: (Mayank) - print nav_msg and see what vars it has
+                # TODO: change nav_data to have exact same vars from print above
+                nav_data = (nav_msg.time_usec, nav_msg.q, nav_msg.rollspeed, nav_msg.pitchspeed, nav_msg.yawspeed, nav_msg.covariance) 
                 timestamp = getattr(nav_msg, '_timestamp', None)
                 timestamp = int(timestamp*1.0e6)
-                drone.pitch_array.append(nav_data[1])
-                drone.roll_array.append(nav_data[0])
-                drone.rpy_timestamps.append(timestamp)
+                drone.pitchspeed_array.append(nav_data[3])
+                drone.rollspeed_array.append(nav_data[2])
+                drone.yawspeed_array.append(nav_data[4])
+                drone.w_timestamps.append(timestamp)
                 # TODO: Comment later on, or add exception to logger.py
-                logging.debug("RPY Logged")
+                logging.debug("W Logged")
 
         # Reset all motor configs
         set_motor_mode(1, 33)
@@ -272,6 +287,8 @@ if __name__ == '__main__':
         
         # Start RPY Logger
         threading.Thread(target= rpy_thread).start()
+        # Start W Logger
+        threading.Thread(target= w_thread).start()
 
         # Confirm vehicle armed before attempting to take off
         while not drone.master.armed:
@@ -305,31 +322,24 @@ if __name__ == '__main__':
 
         logging.debug("Last Heartbeat: %s", drone.last_heartbeat)
 
-
         # TODO: Set motor modes to 1, for the motors you need to introduce fault into
         # set_motor_mode(1, 1)
         set_motor_mode(3, 1)
         set_motor_mode(4, 1)
 
         # TODO: Manually pass a PWM value to the selected motor. For simulating a fault, we pass 1000, which means the motor does not run at all.
-        # set_servo(1, 1000)
         set_servo(3, 1000)
         set_servo(4, 1000)
-        # time.sleep(0.5)
-
-        # set_motor_mode(5, 1)
-        # set_servo(5, 1000)
-
-        # logging.debug("Changing YAW")
-
-        # rotate clockwise
-        # change_yaw(-1)
 
         logging.debug("Goto Again")
         drone.master.simple_goto(point1)
         time.sleep(10)
         
-        scipy.io.savemat('\\temp\\arrdata-new.mat', mdict={'Pitch': drone.pitch_array,'Roll': drone.roll_array, 'Time': drone.timestamp_array})
+        # RPY Log file save
+        scipy.io.savemat('\\temp\\rpy-log.mat', mdict={'Pitch': drone.pitch_array,'Roll': drone.roll_array, 'Time': drone.rpy_timestamps})
+        
+        # W Log file save
+        scipy.io.savemat('\\temp\\w-log.mat', mdict={'Pitchspeed': drone.pitchspeed_array,'Rollspeed': drone.rollspeed_array, 'Yawspeed': drone.yawspeed_array, 'Time': drone.w_timestamps})
 
         logging.debug("Size: %s", str(len(drone.pitch_array)))
 
@@ -340,4 +350,6 @@ if __name__ == '__main__':
         #    W5
 
         # Running Avijiths config:
-        # /Tools/autotest/sim_vehicle.py -v ArduCopter --vehicle=ArduCopter --frame=hexa-ftc --add-param-file=./Tools/autotest/default_params/copter.parm
+        # cd /Documents/ardupilot/Tools/autotest/default_params
+        # /Tools/autotest/sim_vehicle.py -v ArduCopter --vehicle=ArduCopter --frame=hexa-ftc --add-param-file=copter.parm
+        # /Tools/autotest/sim_vehicle.py -v ArduCopter --vehicle=ArduCopter --frame=hexa-ftc --add-param-file=Tools/autotest/default_params/copter.parm
