@@ -335,6 +335,8 @@ if __name__ == '__main__':
         # New pairs: 1-5, 3-6, 2-4;
         # Translated to: 5-2, 4-3, 1-6;
 
+        # TODO: Remove pair translation by fixing order
+
         pairs = [[1,6],[2,5],[3,4]]
 
         def findPartner(node):
