@@ -307,10 +307,6 @@ if __name__ == '__main__':
         drone.master.simple_goto(point1)
         time.sleep(10)
         
-        scipy.io.savemat('\\temp\\arrdata-new.mat', mdict={'Pitch': drone.pitch_array,'Roll': drone.roll_array, 'Time': drone.timestamp_array})
-
-        logging.debug("Size: %s", str(len(drone.pitch_array)))
-
         # Avijith recommended config for HexaCopter
         #    C2
         # W3     C1
@@ -337,7 +333,7 @@ if __name__ == '__main__':
 
         # TODO: Remove pair translation by fixing order
 
-        pairs = [[1,6],[2,5],[3,4]]
+        pairs = [[1,5],[2,4],[3,6]]
 
         def findPartner(node):
             for pair in pairs:
@@ -369,3 +365,8 @@ if __name__ == '__main__':
             [-0.5,  -0.87,  1.,    1.  ],
             [-0.5,   0.87,  1.,    1.  ],
             [ 0.5,  -0.87, -1.,    1.  ]])
+
+        logging.debug("Closing in 10...")
+        time.sleep(10)
+        
+        logging.debug("Closing")
