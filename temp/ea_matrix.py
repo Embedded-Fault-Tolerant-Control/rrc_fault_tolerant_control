@@ -303,11 +303,6 @@ if __name__ == '__main__':
         set_servo(1, 1000)
         set_servo(2, 1000)
 
-        # logging.debug("Changing YAW")
-
-        # rotate clockwise
-        # change_yaw(-1)
-
         logging.debug("Goto Again")
         drone.master.simple_goto(point1)
         time.sleep(10)
@@ -339,3 +334,36 @@ if __name__ == '__main__':
         # https://github.com/AdityaMulgundkar/ardupilot-ftc/blob/master/libraries/AP_Motors/AP_MotorsMatrix.cpp
         # New pairs: 1-5, 3-6, 2-4;
         # Translated to: 5-2, 4-3, 1-6;
+
+        pairs = [[1,6],[2,5],[3,4]]
+
+        def findPartner(node):
+            for pair in pairs:
+                if(pair[0]==node):
+                    return pair[1]
+                if(pair[1]==node):
+                    return pair[0]
+            return 0
+
+        M1 = 3
+        # When we fail a motor, we find its pair motor
+        M2 = findPartner(M1)
+
+        # TODO: Set motor modes to 1, for the motors you need to introduce fault into
+        # set_motor_mode(1, 1)
+        set_motor_mode(M1, 1)
+        set_motor_mode(M2, 1)
+
+        # TODO: Manually pass a PWM value to the selected motor. For simulating a fault, we pass 1000, which means the motor does not run at all.
+        # set_servo(1, 1000)
+        set_servo(M1, 1000)
+        set_servo(M2, 1000)
+
+        # Effectiveness Matrix EA
+        EA = np.matrix([
+            [-1.,    0.,   -1.,    1.  ],
+            [ 1.,   -0.,    1.,    1.  ],
+            [ 0.5,   0.87, -1.,    1.  ],
+            [-0.5,  -0.87,  1.,    1.  ],
+            [-0.5,   0.87,  1.,    1.  ],
+            [ 0.5,  -0.87, -1.,    1.  ]])
