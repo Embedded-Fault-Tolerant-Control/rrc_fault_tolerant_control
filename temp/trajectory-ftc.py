@@ -46,6 +46,10 @@ class Autopilot:
         self.pitch_array = []
         self.roll_array = []
         self.rpy_timestamps = []
+
+        self.pitchspeed_array = []
+        self.rollspeed_array = []
+        self.yawspeed_array = []
         self.w_timestamps = []
 
         # Add a heartbeat listener
@@ -70,7 +74,7 @@ class Autopilot:
         ''' Automatically disarm and stop heartbeats on error/context-close. '''
         self.alive = False
         logging.info('__exit__ -> disarming, stopping heart and closing connection')
-
+        # TODO: add reset parameters procedure. Can be based on flag?
         # Disarm if not disarmed
         if self.master.armed:
             self.master.armed = False
@@ -160,47 +164,6 @@ if __name__ == '__main__':
                 drone.master.send_mavlink(msg)
                 time.sleep(0.1)
 
-        # RPY Thread
-        def rpy_thread():
-            if(drone.alive)==False:
-                pass
-            while drone.alive:
-                rpy_logger()
-                time.sleep(0.01)
-
-        # Func for rpy logging
-        def rpy_logger():
-            # Procedure to track and store pitch-roll-yaw values
-            nav_msg = drone.mavutil.recv_match(type='NAV_CONTROLLER_OUTPUT', blocking=False)
-            time.sleep(0.01)
-
-            if(nav_msg) is None:
-                pass
-            elif nav_msg.get_type()!='BAD_DATA':
-                # 'nav_roll', 'nav_pitch', 'alt_error', 'aspd_error', 'xtrack_error', 'nav_bearing', 'target_bearing', 'wp_dist'
-                nav_data = (nav_msg.nav_roll, nav_msg.nav_pitch, nav_msg.alt_error, nav_msg.aspd_error, nav_msg.xtrack_error, nav_msg.nav_bearing, nav_msg.target_bearing, nav_msg.wp_dist) 
-                timestamp = getattr(nav_msg, '_timestamp', None)
-                timestamp = int(timestamp*1.0e6)
-                drone.pitch_array.append(nav_data[1])
-                drone.roll_array.append(nav_data[0])
-                drone.rpy_timestamps.append(timestamp)
-
-        # Func for rpy logging
-        def w_logger():
-            # Procedure to track and store pitch-roll-yaw values
-            nav_msg = drone.mavutil.recv_match(type='ATTITUDE_QUATERNION_COV', blocking=False)
-            time.sleep(0.01)
-            if(nav_msg) is None:
-                pass
-            elif nav_msg.get_type()!='BAD_DATA':
-                # 'nav_roll', 'nav_pitch', 'alt_error', 'aspd_error', 'xtrack_error', 'nav_bearing', 'target_bearing', 'wp_dist'
-                nav_data = (nav_msg.nav_roll, nav_msg.nav_pitch, nav_msg.alt_error, nav_msg.aspd_error, nav_msg.xtrack_error, nav_msg.nav_bearing, nav_msg.target_bearing, nav_msg.wp_dist) 
-                timestamp = getattr(nav_msg, '_timestamp', None)
-                timestamp = int(timestamp*1.0e6)
-                drone.pitch_array.append(nav_data[1])
-                drone.roll_array.append(nav_data[0])
-                drone.rpy_timestamps.append(timestamp)
-
         # ArduCopter set to hexa (hexa plus) frame
         #    1
         # 5     4
@@ -233,6 +196,64 @@ if __name__ == '__main__':
             # set_motor_dir(5, 0)
             # set_motor_dir(6, 0)
 
+        # RPY Thread
+        def rpy_thread():
+            if(drone.alive)==False:
+                pass
+            while drone.alive:
+                rpy_logger()
+                # TODO: Mayank - test this delay on Pi
+                time.sleep(0.01)
+
+        # W Thread
+        def w_thread():
+            if(drone.alive)==False:
+                pass
+            while drone.alive:
+                w_logger()
+                # TODO: Mayank - test this delay on Pi
+                time.sleep(0.01)
+
+        # Func for rpy logging
+        def rpy_logger():
+            # Procedure to track and store pitch-roll-yaw values
+            nav_msg = drone.mavutil.recv_match(type='NAV_CONTROLLER_OUTPUT', blocking=False)
+            # TODO: Mayank - test this delay on Pi
+            time.sleep(0.01)
+            if(nav_msg) is None:
+                pass
+            elif nav_msg.get_type()!='BAD_DATA':
+                # 'nav_roll', 'nav_pitch', 'alt_error', 'aspd_error', 'xtrack_error', 'nav_bearing', 'target_bearing', 'wp_dist'
+                nav_data = (nav_msg.nav_roll, nav_msg.nav_pitch, nav_msg.alt_error, nav_msg.aspd_error, nav_msg.xtrack_error, nav_msg.nav_bearing, nav_msg.target_bearing, nav_msg.wp_dist) 
+                timestamp = getattr(nav_msg, '_timestamp', None)
+                timestamp = int(timestamp*1.0e6)
+                drone.pitch_array.append(nav_data[1])
+                drone.roll_array.append(nav_data[0])
+                drone.rpy_timestamps.append(timestamp)
+                # TODO: Comment later on, or add exception to logger.py
+                logging.debug("RPY Logged")
+
+        # Func for rpy logging
+        def w_logger():
+            # Procedure to track and store pitch-roll-yaw values
+            nav_msg = drone.mavutil.recv_match(type='ATTITUDE_QUATERNION_COV', blocking=False)
+            # TODO: Mayank - test this delay on Pi
+            time.sleep(0.01)
+            if(nav_msg) is None:
+                pass
+            elif nav_msg.get_type()!='BAD_DATA':
+                # TODO: (Mayank) - print nav_msg and see what vars it has
+                # TODO: change nav_data to have exact same vars from print above
+                nav_data = (nav_msg.time_usec, nav_msg.q, nav_msg.rollspeed, nav_msg.pitchspeed, nav_msg.yawspeed, nav_msg.covariance) 
+                timestamp = getattr(nav_msg, '_timestamp', None)
+                timestamp = int(timestamp*1.0e6)
+                drone.pitchspeed_array.append(nav_data[3])
+                drone.rollspeed_array.append(nav_data[2])
+                drone.yawspeed_array.append(nav_data[4])
+                drone.w_timestamps.append(timestamp)
+                # TODO: Comment later on, or add exception to logger.py
+                logging.debug("W Logged")
+
         # Reset all motor configs
         set_motor_mode(1, 33)
         set_motor_mode(2, 34)
@@ -249,6 +270,10 @@ if __name__ == '__main__':
         set_motor_dir(5, 0)
         set_motor_dir(6, 0)
 
+        # TODO: Uncomment the next two lines in case you are testing a HexaCopter. Keep them commented for a QuadCopter.
+        # set_motor_mode(5, 37)
+        # set_motor_mode(6, 38)
+
         logging.debug("Basic pre-arm checks")
         # Don't try to arm until autopilot is ready
         while not drone.master.is_armable:
@@ -259,9 +284,6 @@ if __name__ == '__main__':
         # Copter should arm in GUIDED mode
         drone.master.mode = VehicleMode("GUIDED")
         drone.master.armed = True
-        
-        # Start RPY Logger
-        threading.Thread(target= rpy_thread).start()
 
         # Confirm vehicle armed before attempting to take off
         while not drone.master.armed:
@@ -269,104 +291,48 @@ if __name__ == '__main__':
             time.sleep(1)
 
         print("Taking off!")
-        drone.master.simple_takeoff(10)  # Take off to target altitude
-
-        # Wait until the vehicle reaches a safe height before processing the goto
-        #  (otherwise the command after Vehicle.simple_takeoff will execute
-        #   immediately).
-        while True:
-            print(" Altitude: ", drone.master.location.global_relative_frame.alt)
-            # Break and return from function just below target altitude.
-            if drone.master.location.global_relative_frame.alt >= 10 * 0.95:
-                print("Reached target altitude")
-                break
-            time.sleep(1)
-            
-
-        logging.debug("Set default/target airspeed to 3")
-        drone.master.airspeed = 3
-
-        logging.debug("Going towards first point for 30 seconds ...")
-        point1 = LocationGlobalRelative(-35.361354, 149.165218, 20)
-        drone.master.simple_goto(point1)
-
-        # sleep so we can see the change in map
-        time.sleep(5)
 
         logging.debug("Last Heartbeat: %s", drone.last_heartbeat)
 
-        # Set motor modes to 1, for the motors you need to introduce fault into
+        # TODO: Set motor modes to 1, for the motors you need to introduce fault into
         set_motor_mode(1, 1)
         set_motor_mode(2, 1)
-
-        # Manually pass a PWM value to the selected motor. For simulating a fault, we pass 1000, which means the motor does not run at all.
-        set_servo(1, 1000)
-        set_servo(2, 1000)
-
-        logging.debug("Goto Again")
-        drone.master.simple_goto(point1)
-        time.sleep(10)
-        
-        # Avijith recommended config for HexaCopter
-        #    C2
-        # W3     C1
-        # C4     w1
-        #    W5
-        # Pairs 1-3, 2-5, 4-6
-        #
-        # NEW:
-        #    C3              C5
-        # W4     C2   /  W4       C6
-        # C5     w1  /   C3       W1
-        #    W6              W2
-
-        # TODO: 
-        # 1. Find relatives/ store pair of motors
-        # 2. Fail 1 motor
-        # 3. Fail paired 2nd motor
-        # 4. Write EA Matrix when motors 1 & 2 are OFF
-
-        # New pairs need translation from testing order to motor index order, refer:
-        # https://github.com/AdityaMulgundkar/ardupilot-ftc/blob/master/libraries/AP_Motors/AP_MotorsMatrix.cpp
-        # New pairs: 1-5, 3-6, 2-4;
-        # Translated to: 5-2, 4-3, 1-6;
-
-        # TODO: Remove pair translation by fixing order
-
-        pairs = [[1,5],[2,4],[3,6]]
-
-        def findPartner(node):
-            for pair in pairs:
-                if(pair[0]==node):
-                    return pair[1]
-                if(pair[1]==node):
-                    return pair[0]
-            return 0
-
-        M1 = 3
-        # When we fail a motor, we find its pair motor
-        M2 = findPartner(M1)
-
-        # TODO: Set motor modes to 1, for the motors you need to introduce fault into
-        # set_motor_mode(1, 1)
-        set_motor_mode(M1, 1)
-        set_motor_mode(M2, 1)
+        set_motor_mode(3, 1)
+        set_motor_mode(4, 1)
+        set_motor_mode(5, 1)
+        set_motor_mode(6, 1)
 
         # TODO: Manually pass a PWM value to the selected motor. For simulating a fault, we pass 1000, which means the motor does not run at all.
-        # set_servo(1, 1000)
-        set_servo(M1, 1000)
-        set_servo(M2, 1000)
+        set_servo(1, 1800)
+        set_servo(2, 1800)
+        set_servo(3, 1800)
+        set_servo(4, 1800)
+        set_servo(5, 1000)
+        set_servo(6, 1000)
 
-        # Effectiveness Matrix EA
-        EA = np.matrix([
-            [-1.,    0.,   -1.,    1.  ],
-            [ 1.,   -0.,    1.,    1.  ],
-            [ 0.5,   0.87, -1.,    1.  ],
-            [-0.5,  -0.87,  1.,    1.  ],
-            [-0.5,   0.87,  1.,    1.  ],
-            [ 0.5,  -0.87, -1.,    1.  ]])
-
-        logging.debug("Closing in 10...")
+        logging.debug("Is it up?")
         time.sleep(10)
-        
-        logging.debug("Closing")
+
+        # TODO: Set motor modes to 1, for the motors you need to introduce fault into
+        set_motor_mode(1, 1)
+        set_motor_mode(2, 1)
+        set_motor_mode(3, 1)
+        set_motor_mode(4, 1)
+        set_motor_mode(5, 1)
+        set_motor_mode(6, 1)
+
+        # TODO: Manually pass a PWM value to the selected motor. For simulating a fault, we pass 1000, which means the motor does not run at all.
+        set_servo(1, 1000)
+        set_servo(2, 1000)
+        set_servo(3, 1800)
+        set_servo(4, 1800)
+        set_servo(5, 1800)
+        set_servo(6, 1800)
+
+        logging.debug("Will it crash?")
+        time.sleep(10)
+
+        # Running Avijiths config:
+        # cd /Documents/ardupilot/Tools/autotest/default_params
+        # ./Tools/autotest/sim_vehicle.py -v ArduCopter --vehicle=ArduCopter --frame=hexa-ftc --add-param-file=copter-ftc.parm
+        # ./Tools/autotest/sim_vehicle.py -v ArduCopter --vehicle=ArduCopter --frame=hexa-ftc --add-param-file=Tools/autotest/default_params/copter-ftc.parm
