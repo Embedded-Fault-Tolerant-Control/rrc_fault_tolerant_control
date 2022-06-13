@@ -86,19 +86,6 @@ class Autopilot:
             t.stop()
         # Close Drone connection
         logging.info('disconnect -> closing Drone connection') 
-
-        # Reset all motor configs
-        set_motor_mode(1, 33)
-        set_motor_mode(2, 34)
-        set_motor_mode(3, 35)
-        set_motor_mode(4, 36)
-        set_motor_mode(5, 37)
-        set_motor_mode(6, 38)
-
-        # re-enable arming checks
-        self.master.parameters[f'ARMING_CHECK'] = 1
-        self.master.parameters[f'FS_CRASH_CHECK'] = 1
-
         self.master.close()
 
 if __name__ == '__main__':
@@ -297,6 +284,11 @@ if __name__ == '__main__':
         # Copter should arm in GUIDED mode
         drone.master.mode = VehicleMode("GUIDED")
         drone.master.armed = True
+        
+        # Start RPY Logger
+        threading.Thread(target= rpy_thread).start()
+        # Start W Logger
+        threading.Thread(target= w_thread).start()
 
         # Confirm vehicle armed before attempting to take off
         while not drone.master.armed:
@@ -304,93 +296,43 @@ if __name__ == '__main__':
             time.sleep(1)
 
         print("Taking off!")
+        drone.master.simple_takeoff(20)  # Take off to target altitude
+
+        # Wait until the vehicle reaches a safe height before processing the goto
+        #  (otherwise the command after Vehicle.simple_takeoff will execute
+        #   immediately).
+        while True:
+            print(" Altitude: ", drone.master.location.global_relative_frame.alt)
+            # Break and return from function just below target altitude.
+            if drone.master.location.global_relative_frame.alt >= 20 * 0.95:
+                print("Reached target altitude")
+                break
+            time.sleep(1)
+            
+        # sleep so we can see the change in map
+        time.sleep(5)
 
         logging.debug("Last Heartbeat: %s", drone.last_heartbeat)
 
-        # disable all arming checks
-        # drone.master.parameters[f'ARMING_CHECK'] = 0
-        # drone.master.parameters[f'FS_CRASH_CHECK'] = 0
-
         # TODO: Set motor modes to 1, for the motors you need to introduce fault into
+        # set_motor_mode(1, 1)
         set_motor_mode(1, 1)
         set_motor_mode(2, 1)
-        set_motor_mode(3, 1)
-        set_motor_mode(4, 1)
-        set_motor_mode(5, 1)
-        set_motor_mode(6, 1)
 
-        # Pairs - 15, 24, 36
-        # Pairs - 56, 34, 12
         # TODO: Manually pass a PWM value to the selected motor. For simulating a fault, we pass 1000, which means the motor does not run at all.
-        set_servo(1, 1800)
-        set_servo(2, 1800)
-        set_servo(3, 1800)
-        set_servo(4, 1800)
-        set_servo(5, 1800)
-        set_servo(6, 1800)
+        set_servo(1, 1000)
+        set_servo(2, 1000)
 
-        logging.debug("Is it up?")
+        print("Taking off!")
+        drone.master.simple_takeoff(10)  # Take off to target altitude
         
         while True:
             print(" Altitude: ", drone.master.location.global_relative_frame.alt)
             # Break and return from function just below target altitude.
-            if drone.master.location.global_relative_frame.alt >=  50:
+            if drone.master.location.global_relative_frame.alt >= 10 * 0.95:
                 print("Reached target altitude")
                 break
             time.sleep(1)
 
-        print("100ms seq start")
-        # 100ms delay bit
-        motor2_pwm = 1800
-        set_servo(1, 1000)
-        set_servo(2, motor2_pwm)
-        set_servo(3, 1800)
-        set_servo(4, 1800)
-        set_servo(5, 1800)
-        set_servo(6, 1800)
-
-    
-        for i in range(1, 10):
-            motor2_pwm = motor2_pwm - 50
-            if motor2_pwm<1600:
-                motor2_pwm = 1600
-            set_servo(2, motor2_pwm)
-            time.sleep(0.01)
-
-        # set_servo(2, 1000)
-
-        print("100ms seq stop")
-        # End of 100ms delay bit
-
-        dir_flag = True
-        alt_counter = 0
+        time.sleep(10)
         
-        while True:
-            if drone.master.location.global_relative_frame.alt < 50:
-                # Go up
-                set_servo(3, 1900)
-                set_servo(4, 1900)
-                set_servo(5, 1900)
-                set_servo(6, 1900)
-                alt_counter = alt_counter + 1
-                if alt_counter == 100:
-                    logging.debug(f"Turned motor 2 off")
-                    set_servo(2, 1000)
-                if dir_flag == True:
-                    logging.debug(f"Go up: {drone.master.location.global_relative_frame.alt}")
-                    dir_flag = False
-            else:
-                # Go down
-                set_servo(3, 1600)
-                set_servo(4, 1600)
-                set_servo(5, 1600)
-                set_servo(6, 1600)
-                if dir_flag == False:
-                    logging.debug(f"Go down: {drone.master.location.global_relative_frame.alt}")
-                    dir_flag = True
-
-
-        # Running Avijiths config:
-        # cd /Documents/ardupilot/Tools/autotest/default_params
-        # ./Tools/autotest/sim_vehicle.py -v ArduCopter --vehicle=ArduCopter --frame=hexa-ftc --add-param-file=copter-ftc.parm
-        # ./Tools/autotest/sim_vehicle.py -v ArduCopter --vehicle=ArduCopter --frame=hexa-ftc --add-param-file=Tools/autotest/default_params/copter-ftc.parm
