@@ -308,8 +308,8 @@ if __name__ == '__main__':
         logging.debug("Last Heartbeat: %s", drone.last_heartbeat)
 
         # disable all arming checks
-        # drone.master.parameters[f'ARMING_CHECK'] = 0
-        # drone.master.parameters[f'FS_CRASH_CHECK'] = 0
+        drone.master.parameters[f'ARMING_CHECK'] = 0
+        drone.master.parameters[f'FS_CRASH_CHECK'] = 0
 
         # TODO: Set motor modes to 1, for the motors you need to introduce fault into
         set_motor_mode(1, 1)
@@ -335,11 +335,41 @@ if __name__ == '__main__':
             print(" Altitude: ", drone.master.location.global_relative_frame.alt)
             # Break and return from function just below target altitude.
             if drone.master.location.global_relative_frame.alt >=  50:
-                print("Reached target altitude")
+                logging.debug("Reached target altitude")
                 break
-            time.sleep(1)
 
-        print("100ms seq start")
+        # Stay at 50m
+        logging.debug("Start 50m seq")
+        for i in range(0, 10000):
+            if drone.master.location.global_relative_frame.alt < 50:
+                # Go up
+                set_servo(1, 1700)
+                set_servo(2, 1700)
+                set_servo(3, 1700)
+                set_servo(4, 1700)
+                set_servo(5, 1700)
+                set_servo(6, 1700)
+                print("50m up: ", drone.master.location.global_relative_frame.alt)
+            else:
+                # Go down
+                set_servo(1, 1500)
+                set_servo(2, 1500)
+                set_servo(3, 1500)
+                set_servo(4, 1500)
+                set_servo(5, 1500)
+                set_servo(6, 1500)
+                print("50m down: ", drone.master.location.global_relative_frame.alt)
+            time.sleep(0.001)
+        # Go up
+        set_servo(1, 1800)
+        set_servo(2, 1800)
+        set_servo(3, 1800)
+        set_servo(4, 1800)
+        set_servo(5, 1800)
+        set_servo(6, 1800)
+        logging.debug("Stop 50m seq")
+
+        logging.debug("100ms seq start")
         # 100ms delay bit
         motor2_pwm = 1800
         set_servo(1, 1000)
@@ -350,12 +380,12 @@ if __name__ == '__main__':
         set_servo(6, 1800)
 
     
-        for i in range(1, 10):
-            motor2_pwm = motor2_pwm - 50
+        for i in range(1, 100):
+            motor2_pwm = motor2_pwm - 5
             if motor2_pwm<1600:
                 motor2_pwm = 1600
             set_servo(2, motor2_pwm)
-            time.sleep(0.01)
+            time.sleep(0.001)
 
         # set_servo(2, 1000)
 
@@ -375,19 +405,15 @@ if __name__ == '__main__':
                 alt_counter = alt_counter + 1
                 if alt_counter == 100:
                     logging.debug(f"Turned motor 2 off")
-                    set_servo(2, 1000)
-                if dir_flag == True:
-                    logging.debug(f"Go up: {drone.master.location.global_relative_frame.alt}")
-                    dir_flag = False
+                    set_servo(2, 1500)
+                logging.debug(f"Go up: {drone.master.location.global_relative_frame.alt}")
             else:
                 # Go down
                 set_servo(3, 1600)
                 set_servo(4, 1600)
                 set_servo(5, 1600)
                 set_servo(6, 1600)
-                if dir_flag == False:
-                    logging.debug(f"Go down: {drone.master.location.global_relative_frame.alt}")
-                    dir_flag = True
+                logging.debug(f"Go down: {drone.master.location.global_relative_frame.alt}")
 
 
         # Running Avijiths config:
