@@ -325,11 +325,11 @@ if __name__ == '__main__':
         # TODO: Set motor modes to 1, for the motors you need to introduce fault into
         # set_motor_mode(1, 1)
         set_motor_mode(3, 1)
-        set_motor_mode(4, 1)
+        set_motor_mode(6, 1)
 
         # TODO: Manually pass a PWM value to the selected motor. For simulating a fault, we pass 1000, which means the motor does not run at all.
         set_servo(3, 1000)
-        set_servo(4, 1000)
+        set_servo(6, 1000)
 
         logging.debug("Goto Again")
         drone.master.simple_goto(point1)
@@ -351,5 +351,5 @@ if __name__ == '__main__':
 
         # Running Avijiths config:
         # cd /Documents/ardupilot/Tools/autotest/default_params
-        # /Tools/autotest/sim_vehicle.py -v ArduCopter --vehicle=ArduCopter --frame=hexa-ftc --add-param-file=copter.parm
-        # /Tools/autotest/sim_vehicle.py -v ArduCopter --vehicle=ArduCopter --frame=hexa-ftc --add-param-file=Tools/autotest/default_params/copter.parm
+        # /Tools/autotest/sim_vehicle.py -v ArduCopter --vehicle=ArduCopter --frame=hexa-ftc --add-param-file=copter-ftc.parm
+        # /Tools/autotest/sim_vehicle.py -v ArduCopter --vehicle=ArduCopter --frame=hexa-ftc --add-param-file=Tools/autotest/default_params/copter-ftc.parm

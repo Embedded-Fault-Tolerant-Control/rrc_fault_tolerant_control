@@ -315,10 +315,10 @@ if __name__ == '__main__':
         # Pairs 1-3, 2-5, 4-6
         #
         # NEW:
-        #    C3
-        # W4     C2
-        # C5     w1
-        #    W6
+        #    C3              C5
+        # W4     C2   /  W4       C6
+        # C5     w1  /   C3       W1
+        #    W6              W2
 
         # TODO: 
         # 1. Find relatives/ store pair of motors
