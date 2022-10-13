@@ -1,3 +1,6 @@
 [submodule "datasets"]
 	path = datasets
 	url = ./datasets/
+[submodule "datasets/rrc_ftc_datasets"]
+	path = datasets/rrc_ftc_datasets
+	url = https://github.com/AdityaMulgundkar/rrc_ftc_datasets
